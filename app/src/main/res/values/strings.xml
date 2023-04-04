@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Eye 42</string>
+    <string name="error_finding_user">Impossible to find the user. Please try again.</string>
+
+    <string name="details_page_title">Student details</string>
+    <string name="profile_image_description">Profile Image</string>
+    <string name="email_description">Email</string>
+    <string name="phone_description">Phone</string>
+    <string name="correction_point_description">Correction Point</string>
+    <string name="account_type_description">Account type</string>
+    <string name="location_description">Location</string>
+    <string name="wallet_description">Wallet number</string>
+    <string name="show_project_button">Click here to show projects</string>
+    <string name="show_skills_button">Click here to show skills</string>
+    <string name="try_again_button">Try again</string>
+    <string name="hidden_phone_number">The phone number is hidden</string>
+    <string name="error_opening_mail_sharing">An error occurred when opening the mail sharing</string>
+    <string name="error_opening_phone_dialer">An error occurred when opening the dialer</string>
+    <string name="username_search_bar">Enter username…</string>
+</resources>

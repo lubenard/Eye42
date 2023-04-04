@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/navSearchFragment">
+
+    <fragment
+        android:id="@+id/navSearchFragment"
+        android:name="com.lubenard.eye42.pages.search.SearchFragment"
+        android:label="SearchFragment">
+        <action
+            android:id="@+id/action_searchFragment_to_detailsFragment"
+            app:destination="@id/navDetailsFragment"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navDetailsFragment"
+        android:name="com.lubenard.eye42.pages.details.DetailsFragment"
+        android:label="details_fragment">
+        <argument
+            android:name="userName"
+            app:argType="string"
+            app:nullable="false" />
+    </fragment>
+
+</navigation>
