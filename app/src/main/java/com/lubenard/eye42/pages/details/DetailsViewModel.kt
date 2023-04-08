@@ -116,6 +116,7 @@ class DetailsViewModel : ViewModel() {
     }
 
     fun showUserProjects() {
+        Log.d(TAG, "${if (!shouldShowUserProjects.value) "SHOW" else "HIDE"} dialog")
         shouldShowUserProjects.value = !shouldShowUserProjects.value
     }
 

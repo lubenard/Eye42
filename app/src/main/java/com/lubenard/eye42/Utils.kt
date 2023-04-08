@@ -39,7 +39,7 @@ fun setContentScreen(context: Context, navController: NavController, pageTitle: 
                                                 contentDescription = "Back"
                                             )
                                         }
-                                    } else { null }
+                                    }
                                 }
                             )
                         },

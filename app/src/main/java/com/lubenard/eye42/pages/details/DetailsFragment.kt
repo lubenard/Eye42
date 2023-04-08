@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
@@ -24,11 +25,17 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -64,7 +71,6 @@ class DetailsFragment : Fragment() {
         }
     }
 
-
     @Composable
     fun DetailsFragmentScreen() {
         val profile by detailsViewModel.profile.collectAsState()
@@ -76,6 +82,89 @@ class DetailsFragment : Fragment() {
         val shouldShowSkillsList by detailsViewModel.shouldShowUserSkills.collectAsState()
 
         DetailsScreen(profile, profileLevel, levelPercentage, profileProjects, profileSkills, shouldShowProjectList, shouldShowSkillsList)
+    }
+
+    @OptIn(ExperimentalFoundationApi::class)
+    @Composable
+    fun projectDialog(projectProjectsScrollState: LazyListState, profileProjects: List<Project>) {
+        Dialog(onDismissRequest = { detailsViewModel.showUserProjects() }) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                modifier = Modifier.fillMaxHeight(0.9f)
+            ) {
+                LazyColumn(
+                    state = projectProjectsScrollState,
+                    horizontalAlignment = Alignment.Start,
+                    modifier = Modifier.padding(start = 15.dp),
+                    contentPadding = PaddingValues(top = 6.dp)
+                ) {
+                    itemsIndexed(profileProjects) { _: Int, it: Project ->
+                        Row(
+                            modifier = Modifier.padding(bottom = 7.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                it.name, modifier = Modifier
+                                    .fillMaxWidth(0.75f)
+                                    .basicMarquee()
+                            )
+                            if (it.note != 0) {
+                                Text(
+                                    "${it.note}",
+                                    color = if (it.completed) Color.Green else Color.Red,
+                                    textAlign = TextAlign.End,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            } else
+                                Spacer(modifier = Modifier.weight(1f))
+                            Icon(
+                                imageVector = if (it.completed) Icons.Default.Done else Icons.Default.Close,
+                                contentDescription = "Done",
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun skillsDialog(projectProjectsScrollState: LazyListState, skillsList: List<Pair<String, Double>>) {
+        Dialog(onDismissRequest = { detailsViewModel.showUserSkills() }) {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                LazyColumn(
+                    state = projectProjectsScrollState,
+                    horizontalAlignment = Alignment.Start,
+                    modifier = Modifier.padding(start = 15.dp),
+                    contentPadding = PaddingValues(top = 6.dp)
+                ) {
+                    itemsIndexed(skillsList) { _: Int, it: Pair<String, Double> ->
+                        Row(modifier = Modifier.padding(bottom = 7.dp)) {
+                            Text(it.first)
+                            Spacer(Modifier.weight(1f))
+                            Text(it.second.toString().take(5))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    @Preview()
+    fun testCard() {
+        projectDialog(
+            rememberLazyListState(), listOf(
+            Project("kfs-1", true, 100, "finished", 3),
+            Project("kfs-2", false, 0, "unfinished", 3),
+            Project("interniship with a very long and boring title because this is how it his", true, 100, "finished", 3),
+            Project("interniship with a very long and boring title because this is how it his", false, 0, "unfinished", 3),
+        ))
+
+        skillsDialog(projectProjectsScrollState = rememberLazyListState(), skillsList = listOf(
+            Pair("Unix", 14.5),
+            Pair("Real long skills that deserve to have it's name ellipsinging", 150.5),
+        ))
     }
 
     @OptIn(ExperimentalGlideComposeApi::class)
@@ -93,6 +182,8 @@ class DetailsFragment : Fragment() {
         val scrollState = rememberScrollState()
         val projectProjectsScrollState = rememberLazyListState()
         val projectSkillsScrollState = rememberLazyListState()
+
+        val context = LocalContext.current
 
         Column(
             modifier = Modifier
@@ -112,8 +203,8 @@ class DetailsFragment : Fragment() {
                     GlideImage(
                         model = profile.imageLink,
                         modifier = Modifier
-                            .padding(top = 15.dp, bottom = 15.dp)
-                            .size(200.dp),
+                            .padding(vertical = 4.dp, horizontal = 2.dp)
+                            .size(150.dp),
                         contentDescription = requireContext().getString(R.string.profile_image_description),
                     )
                 }
@@ -128,11 +219,10 @@ class DetailsFragment : Fragment() {
                 ) {
                     val displayName = if (profile.displayName != null) "${profile.displayName}" else "${profile.firstName} ${profile.lastName}"
 
-                    Row(modifier = Modifier.padding(top = 15.dp).align(CenterHorizontally)) {
-                        Text(
-                            text = "$displayName (${profile.login})",
-                            fontSize = 26.sp,
-                        )
+                    Row(modifier = Modifier
+                        .padding(top = 15.dp)
+                        .align(CenterHorizontally)) {
+                        Text(text = "$displayName (${profile.login})", fontSize = 26.sp,)
                     }
 
                     Box(modifier = Modifier.padding(top = 10.dp), contentAlignment = Center) {
@@ -147,124 +237,92 @@ class DetailsFragment : Fragment() {
                         Text(profileLevel, color = if (levelPercentage < 0.45) MaterialTheme.colorScheme.primary else Color.White)
                     }
 
-                    Row(modifier = Modifier
-                        .padding(top = 10.dp, start = 15.dp)
-                        .clickable(enabled = true) {
+                    TextIconComponent(
+                        Icons.Default.Email,
+                        iconDescription = context.getString(R.string.email_description),
+                        text = profile.email,
+                        onClick = {
                             val i = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"))
                             i.putExtra(Intent.EXTRA_EMAIL, profile.email)
                             try {
                                 requireContext().startActivity(i)
                             } catch (s: SecurityException) {
-                                Toast.makeText(requireContext(), R.string.error_opening_mail_sharing, Toast.LENGTH_LONG).show()
+                                Toast
+                                    .makeText(
+                                        requireContext(),
+                                        R.string.error_opening_mail_sharing,
+                                        Toast.LENGTH_LONG
+                                    )
+                                    .show()
                             }
-                        }) {
-                        Icon(imageVector = Icons.Default.Email, contentDescription = requireContext().getString(R.string.email_description), modifier = Modifier.padding(end = 3.dp))
-                        Text(text = profile.email)
-                    }
+                        }
+                    )
 
-                    Row(modifier = Modifier.padding(top = 5.dp, start = 15.dp)) {
-                        Icon(imageVector = Icons.Default.Phone, contentDescription = requireContext().getString(R.string.phone_description), modifier = Modifier.padding(end = 3.dp))
-                        Text(text = profile.phoneNumber, modifier = Modifier.clickable(profile.phoneNumber.isNotBlank()) {
-                            if (profile.phoneNumber != "hidden") {
-                                val i = Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + profile.phoneNumber))
-                                try {
-                                    requireContext().startActivity(i)
-                                } catch (s: SecurityException) {
-                                    Toast.makeText(requireContext(), R.string.error_opening_phone_dialer, Toast.LENGTH_LONG).show()
+                    if (profile.phoneNumber.isNotBlank()) {
+                        TextIconComponent(
+                            Icons.Default.Phone,
+                            iconDescription = context.getString(R.string.phone_description),
+                            text = profile.phoneNumber,
+                            onClick = {
+                                if (profile.phoneNumber != "hidden") {
+                                    val i = Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + profile.phoneNumber))
+                                    try {
+                                        requireContext().startActivity(i)
+                                    } catch (s: SecurityException) {
+                                        Toast.makeText(requireContext(), R.string.error_opening_phone_dialer, Toast.LENGTH_LONG).show()
+                                    }
+                                } else {
+                                    Toast.makeText(requireContext(), R.string.hidden_phone_number, Toast.LENGTH_SHORT).show()
                                 }
-                            } else {
-                                Toast.makeText(requireContext(), R.string.hidden_phone_number, Toast.LENGTH_SHORT).show()
                             }
-                        })
+                        )
                     }
 
-                    Row(modifier = Modifier.padding(top = 5.dp, start = 15.dp)) {
-                        Icon(painter = painterResource(id = R.drawable.correction_point), contentDescription = requireContext().getString(R.string.correction_point_description), modifier = Modifier.size(27.dp).padding(end = 3.dp))
-                        Text(text = profile.currentCorrectionPoint.toString())
-                    }
+                    TextIconComponent(
+                        icon = R.drawable.correction_point,
+                        iconDescription = context.getString(R.string.correction_point_description),
+                        text = profile.currentCorrectionPoint.toString()
+                    )
 
-                    Row(modifier = Modifier.padding(top = 5.dp, start = 15.dp)) {
-                        Icon(imageVector = Icons.Default.AccountBox, contentDescription = requireContext().getString(R.string.account_type_description), modifier = Modifier.padding(end = 3.dp))
-                        Text(text = "${profile.profileType} (${if (profile.isAlumni) "alumni" else "not alumni"})")
-                    }
+                    TextIconComponent(
+                        Icons.Default.AccountBox,
+                        iconDescription = context.getString(R.string.account_type_description),
+                        text = "${profile.profileType} (${if (profile.isAlumni) "alumni" else "not alumni"})"
+                    )
 
                     if (profile.location != null) {
-                        Row(modifier = Modifier.padding(top = 5.dp, start = 15.dp)) {
-                            Icon(imageVector = Icons.Default.LocationOn, contentDescription = requireContext().getString(R.string.location_description), modifier = Modifier.padding(end = 3.dp))
-                            Text(text = profile.location)
-                        }
+                        TextIconComponent(
+                            Icons.Default.LocationOn,
+                            iconDescription = context.getString(R.string.location_description),
+                            text = profile.location
+                        )
                     }
 
-                    Row(modifier = Modifier.padding(top = 5.dp, start = 15.dp)) {
-                        Icon(painter = painterResource(id = R.drawable.wallet), contentDescription = requireContext().getString(R.string.wallet_description), modifier = Modifier.size(27.dp).padding(end = 3.dp))
-                        Text(text = profile.wallet.toString())
-                    }
+                    TextIconComponent(
+                        icon = R.drawable.wallet,
+                        iconDescription = context.getString(R.string.wallet_description),
+                        text = profile.wallet.toString()
+                    )
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
+                    Text(
+                        text = requireContext().getString(R.string.show_project_button),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = Bold,
+                        modifier = Modifier.fillMaxWidth().padding(start = 15.dp)
                             .clickable(enabled = true) { detailsViewModel.showUserProjects() }
-                    ) {
-                        Text(
-                            text = requireContext().getString(R.string.show_project_button),
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = Bold,
-                            modifier = Modifier.padding(start = 15.dp)
-                        )
-                        Icon(imageVector = if (shouldShowProjectList) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, contentDescription = "Up arrow")
-                    }
+                    )
                     if (shouldShowProjectList) {
-                        LazyColumn(
-                            state = projectProjectsScrollState,
-                            horizontalAlignment = Alignment.Start,
-                            modifier = Modifier.padding(start = 15.dp),
-                            contentPadding = PaddingValues(top = 6.dp)
-                        ) {
-                            itemsIndexed(profileProjects) { _: Int, it: Project ->
-                                Row(modifier = Modifier.padding(bottom = 7.dp)) {
-                                    Text(it.name)
-                                    if (it.note != 0) {
-                                        Text("${it.note}", color = if (it.completed) Color.Green else Color.Red)
-                                    }
-                                    Spacer(Modifier.weight(1f))
-                                    if (it.completed) {
-                                        Icon(
-                                            imageVector = Icons.Default.Done,
-                                            contentDescription = "Done"
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        projectDialog(projectProjectsScrollState, profileProjects = profileProjects)
                     }
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(enabled = true) { detailsViewModel.showUserSkills() }
-                    ) {
-                        Text(
-                            text = requireContext().getString(R.string.show_skills_button),
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = Bold,
-                            modifier = Modifier.padding(start = 15.dp)
-                        )
-                        Icon(imageVector = if (shouldShowProjectList) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, contentDescription = "Up arrow")
-                    }
+
+                    Text(
+                        text = requireContext().getString(R.string.show_skills_button),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = Bold,
+                        modifier = Modifier.fillMaxWidth().padding(start = 15.dp).clickable(enabled = true) { detailsViewModel.showUserSkills() }
+                    )
                     if (shouldShowSkillsList) {
-                        LazyColumn(
-                            state = projectSkillsScrollState,
-                            horizontalAlignment = Alignment.Start,
-                            modifier = Modifier.padding(start = 15.dp),
-                            contentPadding = PaddingValues(top = 6.dp)
-                        ) {
-                            itemsIndexed(skillsList) { _: Int, it: Pair<String, Double> ->
-                                Row(modifier = Modifier.padding(bottom = 7.dp)) {
-                                    Text(it.first)
-                                    Spacer(Modifier.weight(1f))
-                                    Text(it.second.toString().take(5))
-                                }
-                            }
-                        }
+                        skillsDialog(projectProjectsScrollState = projectSkillsScrollState, skillsList = skillsList)
                     }
                 }
             } else {
@@ -279,6 +337,50 @@ class DetailsFragment : Fragment() {
         }
     }
 
+    @Composable
+    fun TextIconComponent(iconVector: ImageVector?= null, icon: Int? = null, iconDescription: String, text: String, onClick: (() -> Unit)? = null) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 5.dp, start = 15.dp)
+                .clickable(enabled = onClick != null) {
+                    onClick?.invoke()
+                }
+        ) {
+            if (iconVector != null) {
+                Icon(
+                    imageVector = iconVector,
+                    contentDescription = iconDescription,
+                    modifier = Modifier.padding(end = 3.dp)
+                )
+            } else if (icon != null) {
+                Icon(
+                    painter = painterResource(id = icon),
+                    contentDescription = iconDescription,
+                    modifier = Modifier
+                        .size(27.dp)
+                        .padding(end = 3.dp)
+                )
+            }
+            Text(text = text)
+        }
+    }
+
+    @Preview(showBackground = true)
+    @Composable
+    fun TextIconComponentPreview() {
+        Column() {
+            TextIconComponent(
+                Icons.Default.Email,
+                iconDescription = "Wallet", text = "3"
+            )
+            TextIconComponent(
+                Icons.Default.AccountBox,
+                iconDescription = "Account details", text = "Paris"
+            )
+        }
+    }
 
     @Preview(showBackground = true)
     @Composable
