@@ -88,14 +88,16 @@ class SearchFragment : Fragment() {
                 return false
             }
 
+            Log.d(TAG, "Token from sharedPreferences does not seems corrupted, $tokenInfoRetrieved")
+
             val tokenCreationDate = Calendar.getInstance()
 
-            tokenCreationDate.time.time = tokenInfoRetrieved.tokenCreatedDate
-            tokenCreationDate.add(Calendar.SECOND, tokenInfoRetrieved.tokenCreatedDate.toInt())
+            tokenCreationDate.timeInMillis = tokenInfoRetrieved.tokenCreatedDate * 1000
+            tokenCreationDate.add(Calendar.SECOND, tokenInfoRetrieved.tokenExpiration.toInt())
 
             // The token is considered as expired, we need to create a new one
-            if (tokenCreationDate.time.time >= Date().time) {
-                Log.w(TAG, "It seems token is too old to use !")
+            if (tokenCreationDate.timeInMillis < Calendar.getInstance().timeInMillis) {
+                Log.w(TAG, "It seems token is too old to use ! ${tokenCreationDate.timeInMillis} / ${Calendar.getInstance().timeInMillis}")
                 return false
             }
 
