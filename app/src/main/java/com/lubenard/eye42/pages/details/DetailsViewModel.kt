@@ -34,6 +34,13 @@ data class Project(
     val retryNumber: Int
 )
 
+data class Achievement(
+    val name: String,
+    val iconUrl: String,
+    val description: String,
+    val occurence: Int = 1
+)
+
 class DetailsViewModel : ViewModel() {
 
     private val TAG = this::class.simpleName
@@ -41,12 +48,14 @@ class DetailsViewModel : ViewModel() {
     val profile = MutableStateFlow<Profile?>(null)
     val userProjects = MutableStateFlow<List<Project>>(listOf())
     val userSkills = MutableStateFlow<List<Pair<String, Double>>>(listOf())
+    val userAchievements = MutableStateFlow<List<Achievement>>(listOf())
 
     val levelPercentage = MutableStateFlow(0f)
     val userLevel = MutableStateFlow("")
 
     val shouldShowUserProjects = MutableStateFlow(false)
     val shouldShowUserSkills = MutableStateFlow(false)
+    val shouldShowAchievementsList = MutableStateFlow(false)
 
     fun loadProfileInfo(userName: String, onErrorCallback: (() -> Unit)) {
         Log.d(TAG, "Looking for username $userName")
@@ -109,6 +118,28 @@ class DetailsViewModel : ViewModel() {
                     userSkills.value = skillsList.toList()
                 }
             }
+
+            if (it.has("achievements")) {
+                val achievementList = it.getJSONArray("achievements")
+                val achievementListMutable: MutableList<Achievement> = mutableListOf()
+                for (i in 0 until achievementList.length()) {
+                    val achievement = (achievementList[i] as JSONObject)
+                    val achievementName = achievement.getString("name")
+                    val searchOccurence = achievementListMutable.find { it.name == achievementName }
+                    if (searchOccurence != null) {
+                        achievementListMutable.remove(searchOccurence)
+                    }
+                    achievementListMutable.add(
+                        Achievement(
+                            achievement.getString("name"),
+                            achievement.getString("image"),
+                            achievement.getString("description"),
+                            if (searchOccurence != null) searchOccurence.occurence + 1 else 0
+                        )
+                    )
+                }
+                userAchievements.value = achievementListMutable
+            }
         },
         errorCallback = {
             onErrorCallback.invoke()
@@ -122,5 +153,9 @@ class DetailsViewModel : ViewModel() {
 
     fun showUserSkills() {
         shouldShowUserSkills.value = !shouldShowUserSkills.value
+    }
+
+    fun showUserAchievements() {
+        shouldShowAchievementsList.value = !shouldShowAchievementsList.value
     }
 }

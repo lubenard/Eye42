@@ -40,8 +40,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
-import com.bumptech.glide.integration.compose.GlideImage
+import coil.ImageLoader
+import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
+import com.lubenard.eye42.NetworkManager
 import com.lubenard.eye42.R
 import com.lubenard.eye42.setContentScreen
 import com.lubenard.eye42.ui.theme.Eye42Theme
@@ -76,12 +78,14 @@ class DetailsFragment : Fragment() {
         val profile by detailsViewModel.profile.collectAsState()
         val profileProjects by detailsViewModel.userProjects.collectAsState()
         val profileSkills by detailsViewModel.userSkills.collectAsState()
+        val achievementList by detailsViewModel.userAchievements.collectAsState()
         val levelPercentage by detailsViewModel.levelPercentage.collectAsState()
         val profileLevel by detailsViewModel.userLevel.collectAsState()
         val shouldShowProjectList by detailsViewModel.shouldShowUserProjects.collectAsState()
         val shouldShowSkillsList by detailsViewModel.shouldShowUserSkills.collectAsState()
+        val shouldShowAchievementsList by detailsViewModel.shouldShowAchievementsList.collectAsState()
 
-        DetailsScreen(profile, profileLevel, levelPercentage, profileProjects, profileSkills, shouldShowProjectList, shouldShowSkillsList)
+        DetailsScreen(profile, profileLevel, levelPercentage, profileProjects, profileSkills, achievementList, shouldShowProjectList, shouldShowSkillsList, shouldShowAchievementsList)
     }
 
     @OptIn(ExperimentalFoundationApi::class)
@@ -151,6 +155,52 @@ class DetailsFragment : Fragment() {
     }
 
     @Composable
+    fun achievementsDialog(projectProjectsScrollState: LazyListState, achievementList: List<Achievement>) {
+        Dialog(onDismissRequest = { detailsViewModel.showUserAchievements() }) {
+            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                LazyColumn(
+                    state = projectProjectsScrollState,
+                    horizontalAlignment = Alignment.Start,
+                    modifier = Modifier.padding(start = 15.dp),
+                    contentPadding = PaddingValues(top = 6.dp)
+                ) {
+                    itemsIndexed(achievementList) { _: Int, it: Achievement ->
+                        Row(modifier = Modifier
+                            .height(30.dp)
+                            .padding(bottom = 7.dp)
+                            .clickable(enabled = true) { Toast.makeText(context, it.description, Toast.LENGTH_LONG).show() }
+                        ) {
+                            Text("${it.name} ${"I".repeat(it.occurence)}")
+                            Spacer(Modifier.weight(1f))
+                            AsyncImage(
+                                model = NetworkManager.apiBaseUrl.replace("/v2", "") + it.iconUrl,
+                                contentDescription = "Achievement icon",
+                                imageLoader = ImageLoader.Builder(LocalContext.current)
+                                    .components { add(SvgDecoder.Factory()) }
+                                    .build(),
+                                modifier = Modifier.size(25.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    @Preview
+    fun testAchievements() {
+        Column {
+            achievementsDialog(
+                projectProjectsScrollState = rememberLazyListState(), achievementList = listOf(
+                    Achievement("Test achievement", "https://samplelib.com/lib/preview/png/sample-bumblebee-400x300.png", "", 0),
+                    Achievement("Real long achievement that deserve to have it's name ellipsinging", "https://samplelib.com/lib/preview/png/sample-bumblebee-400x300.png", "", 0),
+                )
+            )
+        }
+    }
+
+    @Composable
     @Preview()
     fun testCard() {
         projectDialog(
@@ -167,7 +217,6 @@ class DetailsFragment : Fragment() {
         ))
     }
 
-    @OptIn(ExperimentalGlideComposeApi::class)
     @Composable
     fun DetailsScreen(
         profile: Profile?,
@@ -175,8 +224,10 @@ class DetailsFragment : Fragment() {
         levelPercentage: Float,
         profileProjects: List<Project>,
         skillsList: List<Pair<String, Double>>,
+        achievementList: List<Achievement>,
         shouldShowProjectList: Boolean,
-        shouldShowSkillsList: Boolean
+        shouldShowSkillsList: Boolean,
+        shouldShowAchievementsList: Boolean
     ) {
 
         val scrollState = rememberScrollState()
@@ -200,13 +251,14 @@ class DetailsFragment : Fragment() {
                         .padding(top = 5.dp),
                     colors = CardDefaults.cardColors(containerColor = Color(0xfffaf7f7))
                 ) {
-                    GlideImage(
+                    AsyncImage(
                         model = profile.imageLink,
+                        contentDescription = requireContext().getString(R.string.profile_image_description),
                         modifier = Modifier
                             .padding(vertical = 4.dp, horizontal = 2.dp)
-                            .size(150.dp),
-                        contentDescription = requireContext().getString(R.string.profile_image_description),
+                            .size(150.dp)
                     )
+
                 }
 
                 Card(
@@ -308,7 +360,9 @@ class DetailsFragment : Fragment() {
                         text = requireContext().getString(R.string.show_project_button),
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = Bold,
-                        modifier = Modifier.fillMaxWidth().padding(start = 15.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 15.dp)
                             .clickable(enabled = true) { detailsViewModel.showUserProjects() }
                     )
                     if (shouldShowProjectList) {
@@ -319,10 +373,26 @@ class DetailsFragment : Fragment() {
                         text = requireContext().getString(R.string.show_skills_button),
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = Bold,
-                        modifier = Modifier.fillMaxWidth().padding(start = 15.dp).clickable(enabled = true) { detailsViewModel.showUserSkills() }
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 15.dp)
+                            .clickable(enabled = true) { detailsViewModel.showUserSkills() }
                     )
                     if (shouldShowSkillsList) {
                         skillsDialog(projectProjectsScrollState = projectSkillsScrollState, skillsList = skillsList)
+                    }
+
+                    Text(
+                        text = requireContext().getString(R.string.show_achievements_button),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = Bold,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 15.dp)
+                            .clickable(enabled = true) { detailsViewModel.showUserAchievements() }
+                    )
+                    if (shouldShowAchievementsList) {
+                        achievementsDialog(projectProjectsScrollState = projectSkillsScrollState, achievementList = achievementList)
                     }
                 }
             } else {
@@ -404,8 +474,10 @@ class DetailsFragment : Fragment() {
                 0.5f,
                 listOf(),
                 listOf(),
+                listOf(),
                 shouldShowProjectList = false,
-                shouldShowSkillsList = false
+                shouldShowSkillsList = false,
+                shouldShowAchievementsList = false
             )
         }
     }

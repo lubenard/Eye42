@@ -21,12 +21,14 @@ data class TokenInfo(val token: String, val tokenType: String, val tokenCreatedD
 
 class NetworkManager(context: Context)  {
 
+    companion object {
+        const val apiBaseUrl = "https://api.intra.42.fr/v2"
+    }
+
     private val TAG = this::class.simpleName
 
     private val clientUid = BuildConfig.CLIENT_UID
     private val clientSecret = BuildConfig.CLIENT_SECRET
-    private val apiBaseUrl = "https://api.intra.42.fr/v2"
-
     private val queue: RequestQueue
 
     private var tokenInfo: TokenInfo? = null
