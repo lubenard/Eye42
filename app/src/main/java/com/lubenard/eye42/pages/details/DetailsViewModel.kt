@@ -23,7 +23,9 @@ data class Profile(
     val currentCorrectionPoint: Int,
     val wallet: Int,
     val isAlumni: Boolean,
-    val location: String?
+    val location: String?,
+    val locationLink: String?,
+    val currentTitle: String
 )
 
 data class Project(
@@ -76,7 +78,9 @@ class DetailsViewModel : ViewModel() {
                     it.getInt("correction_point"),
                     it.getInt("wallet"),
                     if (it.has("alumni?")) it.getBoolean("alumni?") else true,
-                    if (it.isNull("location")) null else it.getString("location")
+                    if (it.isNull("location")) null else it.getString("location"),
+                    "", // We cannot get the campus link without exploring "campus"
+                    "" // We cannot get the title link without exploring "titles"
                 )
                 Log.d("Details", "Profile is ${profile.value}")
             }
@@ -84,7 +88,7 @@ class DetailsViewModel : ViewModel() {
             // If we cannot get campus based on first json Object, we try to find it via campus field
             if (it.has("campus") && profile.value?.location == null) {
                 val campus = it.getJSONArray("campus")[it.getJSONArray("campus").length() - 1] as JSONObject
-                profile.value = profile.value?.copy(location = campus.getString("name"))
+                profile.value = profile.value?.copy(location = campus.getString("name"), locationLink = campus.getString("website"))
             }
 
             if (it.has("projects_users")) {
@@ -139,6 +143,25 @@ class DetailsViewModel : ViewModel() {
                     )
                 }
                 userAchievements.value = achievementListMutable
+            }
+
+            if (it.has("titles") && it.has("titles_users")) {
+                val titlesJson = it.getJSONArray("titles")
+                val userTitles = mutableListOf<Pair<Int, String>>()
+                for (j in  0 until titlesJson.length()) {
+                    userTitles.add(Pair((titlesJson[j] as JSONObject).getInt("id"), (titlesJson[j] as JSONObject).getString("name")))
+                }
+                Log.d(TAG, "userTitles are $userTitles")
+                val titlesUsersJson = it.getJSONArray("titles_users")
+                for (i in 0 until titlesUsersJson.length()) {
+                    if ((titlesUsersJson[i] as JSONObject).getBoolean("selected")) {
+                        Log.d(TAG, "${(titlesUsersJson[i] as JSONObject)}")
+                        val currentTitle = userTitles.find { it.first == (titlesUsersJson[i] as JSONObject).getInt("title_id") }
+                        Log.d(TAG, "currentTitle is $currentTitle")
+                        if (currentTitle != null)
+                            profile.value = profile.value?.copy(currentTitle = currentTitle.second)
+                    }
+                }
             }
         },
         errorCallback = {

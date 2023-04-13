@@ -9,10 +9,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -28,14 +25,13 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight.Companion.Bold
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -88,45 +84,50 @@ class DetailsFragment : Fragment() {
         DetailsScreen(profile, profileLevel, levelPercentage, profileProjects, profileSkills, achievementList, shouldShowProjectList, shouldShowSkillsList, shouldShowAchievementsList)
     }
 
-    @OptIn(ExperimentalFoundationApi::class)
     @Composable
-    fun projectDialog(projectProjectsScrollState: LazyListState, profileProjects: List<Project>) {
-        Dialog(onDismissRequest = { detailsViewModel.showUserProjects() }) {
+    private fun dialogCardModel(onDismiss: (() -> Unit), listState: LazyListState, listComposable: (LazyListScope.() -> Unit)) {
+        Dialog(onDismissRequest = onDismiss) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                modifier = Modifier.fillMaxHeight(0.9f)
+                modifier = Modifier.heightIn(0.dp, 700.dp)
             ) {
                 LazyColumn(
-                    state = projectProjectsScrollState,
+                    state = listState,
                     horizontalAlignment = Alignment.Start,
                     modifier = Modifier.padding(start = 15.dp),
                     contentPadding = PaddingValues(top = 6.dp)
                 ) {
-                    itemsIndexed(profileProjects) { _: Int, it: Project ->
-                        Row(
-                            modifier = Modifier.padding(bottom = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                it.name, modifier = Modifier
-                                    .fillMaxWidth(0.75f)
-                                    .basicMarquee()
-                            )
-                            if (it.note != 0) {
-                                Text(
-                                    "${it.note}",
-                                    color = if (it.completed) Color.Green else Color.Red,
-                                    textAlign = TextAlign.End,
-                                    modifier = Modifier.weight(1f)
-                                )
-                            } else
-                                Spacer(modifier = Modifier.weight(1f))
-                            Icon(
-                                imageVector = if (it.completed) Icons.Default.Done else Icons.Default.Close,
-                                contentDescription = "Done",
-                            )
-                        }
-                    }
+                    listComposable.invoke(this)
+                }
+            }
+        }
+    }
+
+    @OptIn(ExperimentalFoundationApi::class)
+    @Composable
+    fun projectDialog(projectProjectsScrollState: LazyListState, profileProjects: List<Project>) {
+        dialogCardModel(onDismiss = { detailsViewModel.showUserProjects() }, listState = projectProjectsScrollState) {
+            itemsIndexed(profileProjects) { _: Int, it: Project ->
+                Row(
+                    modifier = Modifier.padding(bottom = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(it.name, modifier = Modifier
+                        .fillMaxWidth(0.75f)
+                        .basicMarquee())
+                    if (it.note != 0) {
+                        Text(
+                            "${it.note}",
+                            color = if (it.completed) Color.Green else Color.Red,
+                            textAlign = TextAlign.End,
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else
+                        Spacer(modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = if (it.completed) Icons.Default.Done else Icons.Default.Close,
+                        contentDescription = "Done",
+                    )
                 }
             }
         }
@@ -134,54 +135,42 @@ class DetailsFragment : Fragment() {
 
     @Composable
     fun skillsDialog(projectProjectsScrollState: LazyListState, skillsList: List<Pair<String, Double>>) {
-        Dialog(onDismissRequest = { detailsViewModel.showUserSkills() }) {
-            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                LazyColumn(
-                    state = projectProjectsScrollState,
-                    horizontalAlignment = Alignment.Start,
-                    modifier = Modifier.padding(start = 15.dp),
-                    contentPadding = PaddingValues(top = 6.dp)
-                ) {
-                    itemsIndexed(skillsList) { _: Int, it: Pair<String, Double> ->
-                        Row(modifier = Modifier.padding(bottom = 7.dp)) {
-                            Text(it.first)
-                            Spacer(Modifier.weight(1f))
-                            Text(it.second.toString().take(5))
-                        }
-                    }
+        dialogCardModel(onDismiss = { detailsViewModel.showUserSkills() }, listState = projectProjectsScrollState) {
+            itemsIndexed(skillsList) { _: Int, it: Pair<String, Double> ->
+                Row(modifier = Modifier.padding(bottom = 12.dp)) {
+                    Text(it.first)
+                    Spacer(Modifier.weight(1f))
+                    Text(it.second.toString().take(5))
                 }
             }
         }
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun achievementsDialog(projectProjectsScrollState: LazyListState, achievementList: List<Achievement>) {
-        Dialog(onDismissRequest = { detailsViewModel.showUserAchievements() }) {
-            Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                LazyColumn(
-                    state = projectProjectsScrollState,
-                    horizontalAlignment = Alignment.Start,
-                    modifier = Modifier.padding(start = 15.dp),
-                    contentPadding = PaddingValues(top = 6.dp)
-                ) {
-                    itemsIndexed(achievementList) { _: Int, it: Achievement ->
-                        Row(modifier = Modifier
-                            .height(30.dp)
-                            .padding(bottom = 7.dp)
-                            .clickable(enabled = true) { Toast.makeText(context, it.description, Toast.LENGTH_LONG).show() }
-                        ) {
-                            Text("${it.name} ${"I".repeat(it.occurence)}")
-                            Spacer(Modifier.weight(1f))
-                            AsyncImage(
-                                model = NetworkManager.apiBaseUrl.replace("/v2", "") + it.iconUrl,
-                                contentDescription = "Achievement icon",
-                                imageLoader = ImageLoader.Builder(LocalContext.current)
-                                    .components { add(SvgDecoder.Factory()) }
-                                    .build(),
-                                modifier = Modifier.size(25.dp)
-                            )
-                        }
+        dialogCardModel(onDismiss = { detailsViewModel.showUserAchievements()}, listState = projectProjectsScrollState) {
+            itemsIndexed(achievementList) { _: Int, it: Achievement ->
+                Row(modifier = Modifier
+                    .height(40.dp)
+                    .padding(bottom = 7.dp)
+                    .clickable(enabled = true) {
+                        Toast.makeText(context, it.description, Toast.LENGTH_LONG).show()
                     }
+                ) {
+                    Text("${it.name} ${"I".repeat(it.occurence)}", modifier = Modifier
+                        .fillMaxWidth(0.85f)
+                        .basicMarquee()
+                    )
+                    Spacer(Modifier.weight(1f))
+                    AsyncImage(
+                        model = NetworkManager.apiBaseUrl.replace("/v2", "") + it.iconUrl,
+                        contentDescription = "Achievement icon",
+                        imageLoader = ImageLoader.Builder(LocalContext.current)
+                            .components { add(SvgDecoder.Factory()) }
+                            .build(),
+                        modifier = Modifier.size(40.dp)
+                    )
                 }
             }
         }
@@ -217,6 +206,7 @@ class DetailsFragment : Fragment() {
         ))
     }
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun DetailsScreen(
         profile: Profile?,
@@ -269,12 +259,14 @@ class DetailsFragment : Fragment() {
                         .fillMaxSize(),
                     colors = CardDefaults.cardColors(containerColor = Color(0xfffaf7f7))
                 ) {
+
                     val displayName = if (profile.displayName != null) "${profile.displayName}" else "${profile.firstName} ${profile.lastName}"
+                    val displayLogin = if (profile.currentTitle.isNotEmpty()) profile.currentTitle.replace("%login", profile.login) else profile.login
 
                     Row(modifier = Modifier
-                        .padding(top = 15.dp)
-                        .align(CenterHorizontally)) {
-                        Text(text = "$displayName (${profile.login})", fontSize = 26.sp,)
+                        .padding(top = 15.dp, start = 15.dp, end = 15.dp)
+                        .align(CenterHorizontally).basicMarquee()) {
+                        Text(text = "$displayName ($displayLogin)", fontSize = 24.sp)
                     }
 
                     Box(modifier = Modifier.padding(top = 10.dp), contentAlignment = Center) {
@@ -346,7 +338,12 @@ class DetailsFragment : Fragment() {
                         TextIconComponent(
                             Icons.Default.LocationOn,
                             iconDescription = context.getString(R.string.location_description),
-                            text = profile.location
+                            text = profile.location,
+                            onClick = {
+                                val browserIntent =
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(profile.locationLink))
+                                startActivity(browserIntent)
+                            }
                         )
                     }
 
@@ -399,7 +396,7 @@ class DetailsFragment : Fragment() {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .size(size = 64.dp)
-                        .padding(bottom = 5.dp, end = 5.dp),
+                        .padding(bottom = 15.dp, end = 15.dp),
                     color = Color.Black,
                     strokeWidth = 6.dp
                 )
@@ -468,7 +465,9 @@ class DetailsFragment : Fragment() {
                 3,
                 150,
                 false,
-                "Paris"
+                "Paris",
+                "",
+                ""
                 ),
                 "12.50",
                 0.5f,
