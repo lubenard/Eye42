@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-
+    environment: CI
     runs-on: ubuntu-latest
 
     steps:
@@ -23,4 +23,8 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - name: Build with Gradle
+      env:
+        CLIENT_UID: ${{ secrets.CLIENT_UID }}
+        CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ISEYE42CI: ${{ env.ISEYE42CI }}
       run: ./gradlew build

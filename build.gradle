@@ -17,4 +17,12 @@ plugins {
     id 'org.jetbrains.kotlin.android' version '1.8.10' apply false
 }
 
-apply from: '.env.gradle'
+// We use this env variable to determine if we are in the CI
+def envVar = System.getenv('ISEYE42CI')
+
+if (envVar == null) {
+    apply from: '.env.gradle'
+} else {
+    ext.CLIENT_UID = System.getenv('CLIENT_UID')
+    ext.CLIENT_SECRET = System.getenv('CLIENT_SECRET')
+}
