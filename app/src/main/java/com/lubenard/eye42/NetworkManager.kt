@@ -22,7 +22,8 @@ data class TokenInfo(val token: String, val tokenType: String, val tokenCreatedD
 class NetworkManager(context: Context)  {
 
     companion object {
-        const val apiBaseUrl = "https://api.intra.42.fr/v2"
+        const val apiBaseUrl = "https://api.intra.42.fr/"
+        const val cdnBaseApi = "https://cdn.intra.42.fr"
     }
 
     private val TAG = this::class.simpleName
@@ -87,7 +88,7 @@ class NetworkManager(context: Context)  {
     }
 
     fun connectToApi(context: Context) {
-        val tokenEndpoint = "/oauth/token"
+        val tokenEndpoint = "oauth/token"
         val params = mapOf<String, Any>(
             Pair("grant_type", "client_credentials"),
             Pair("client_id", clientUid),

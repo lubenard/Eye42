@@ -61,7 +61,7 @@ class DetailsViewModel : ViewModel() {
 
     fun loadProfileInfo(userName: String, onErrorCallback: (() -> Unit)) {
         Log.d(TAG, "Looking for username $userName")
-        MainActivity.networkManager?.getServerResponse(Request.Method.GET, "/users/$userName", successCallback = {
+        MainActivity.networkManager?.getServerResponse(Request.Method.GET, "v2/users/$userName", successCallback = {
             Log.d("DetailsViewModel", "Success about getting info about me !")
             Log.d("DetailsViewModel", "Response is $it")
 
@@ -142,6 +142,7 @@ class DetailsViewModel : ViewModel() {
                         )
                     )
                 }
+                Log.d(TAG, "Loaded userAchievement $achievementListMutable")
                 userAchievements.value = achievementListMutable
             }
 

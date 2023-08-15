@@ -164,7 +164,7 @@ class DetailsFragment : Fragment() {
                     )
                     Spacer(Modifier.weight(1f))
                     AsyncImage(
-                        model = NetworkManager.apiBaseUrl.replace("/v2", "") + it.iconUrl,
+                        model = NetworkManager.cdnBaseApi + it.iconUrl.replace("/uploads", ""),
                         contentDescription = "Achievement icon",
                         imageLoader = ImageLoader.Builder(LocalContext.current)
                             .components { add(SvgDecoder.Factory()) }

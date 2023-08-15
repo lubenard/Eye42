@@ -36,6 +36,7 @@ jobs:
     - name: Run maestro tests
   
   ui-test:
+    environment: CI
     runs-on: ubuntu-latest
     steps:
       - name: checkout
